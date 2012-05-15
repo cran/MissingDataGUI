@@ -5,9 +5,6 @@
 \source{
   \url{http://www.pmel.noaa.gov/tao/data_deliv/deliv.html}
 }
-\usage{
-  data(tao)
-}
 \description{
   Real-time data from moored ocean buoys for improved
   detection, understanding and prediction of El Ni'o and La
@@ -51,3 +48,4 @@ MissingDataGUI(tao)
 }
 }
 \keyword{datasets}
+

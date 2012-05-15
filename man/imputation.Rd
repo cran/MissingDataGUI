@@ -4,7 +4,7 @@
 condition.}
 \usage{
   imputation(origdata, method, vartype, missingpct,
-  condition = NULL)
+    condition = NULL)
 }
 \arguments{
   \item{origdata}{A data frame whose missing values need to
