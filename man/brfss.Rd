@@ -6,9 +6,6 @@ Data, 2009.}
 \source{
   \url{http://www.cdc.gov/BRFSS/technical_infodata/surveydata/2009.htm}
 }
-\usage{
-  data(brfss)
-}
 \description{
   The data is a subset of the 2009 survey from BRFSS, an
   ongoing data collection program designed to measure
@@ -166,3 +163,4 @@ MissingDataGUI(brfss)
 }
 }
 \keyword{datasets}
+
