@@ -1,3 +1,4 @@
+globalVariables(c("observation", "variable","Reordered_Observation"))
 ##' The Main Window of Missing Data GUI.
 ##'
 ##' This function is to open the missing data GUI. The widgets shown
@@ -315,7 +316,7 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, ...){
       if (n==2) {
         print(qplot(dat[,1],dat[,2], color=Missing, geom='jitter',alpha=I(0.7),
                     size=I(3),xlab=colnames(dat)[1],ylab=colnames(dat)[2]) + 
-              opts(legend.position='bottom'))
+              theme(legend.position='bottom'))
       } else {
         dat$Missings=factor(Missing)
         print(ggpairs(dat,columns=1:n,colour="Missings", fill="Missings",alpha=I(0.5)))
@@ -334,7 +335,7 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, ...){
       glay15[1, 1, expand = TRUE] = ggraphics(container = glay15, expand = TRUE)
       dat$Missing=Missing
       print(ggpcp(dat,vars=names(dat)[1:n])+geom_line(aes(colour=Missing))+ 
-            opts(legend.position='bottom'))
+            theme(legend.position='bottom'))
     }
     if (graphtype=="Missingness Map"){
       glay15[1, 1, expand = TRUE] = ggraphics(container = glay15, expand = TRUE)
@@ -380,35 +381,81 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, ...){
   ExportData = function(h,...){
     name_select = svalue(gt11, index = TRUE)
     imp_method = svalue(gr142)
+    FileSuffix = paste('_impute_',gsub('[^a-z,A-Z,0-9]',"",imp_method),sep='')
     graphtype = svalue(gr143)
     n = length(name_select)
     cond = check123[svalue(check123,index=T)]
     if (length(cond)==0) cond = NULL
     
     if (n == 0) {
-      gmessage("Please select at least one variable!")
-      return()
+        svalue(gt11) = 1:nrow(gt11)
+        name_select = svalue(gt11, index = TRUE)
+        n = length(name_select)
+        gmessage("All variables are selected to export.")
     }
     
     if (!exists('imp_dat')) {
-      dat = imputation(origdata=dataset[,c(gt11[name_select,2],cond)],
-                       method=imp_method, vartype=as.character(gt11[name_select,3]),
-                       missingpct=as.numeric(as.character(gt11[name_select,4])),
-                       condition=cond)
-      dat = data.frame(dat[,-ncol(dat)],
-                       is.na(dataset[dat[,ncol(dat)],gt11[name_select,2]]))
-      colnames(dat)[1:(2*n)]=c(gt11[name_select,2],
-                               paste('Missing', gt11[name_select,2], sep='_'))
+        dat = imputation(origdata=dataset[,c(gt11[name_select,2],cond)],
+                         method=imp_method, vartype=as.character(gt11[name_select,3]),
+                         missingpct=as.numeric(as.character(gt11[name_select,4])),
+                         condition=cond)
+        dat = data.frame(dat[,-ncol(dat)],
+                         is.na(dataset[dat[,ncol(dat)],gt11[name_select,2]]))
+        colnames(dat)[1:(2*n)]=c(gt11[name_select,2],
+                                 paste('Missing', gt11[name_select,2], sep='_'))
     } else {
-      dat = imp_dat
+        dat = imp_dat
     }
     
-    if (!is.na(gf <- gfile(type = "save"))) {
-      filename = paste('_impute_',gsub('[^a-z,A-Z,0-9]',"",imp_method),".csv",sep='')
-      write.csv(dat[,1:(2*n)], file = ifelse(grepl("\\.csv$",gf),gsub('\\.csv$',filename,gf),paste(gf,filename,sep='')), row.names = FALSE)
-      gmessage("The data are exported!")
+    entire_dat = data.frame(dataset,is.na(dataset))
+    colnames(entire_dat)=c(colnames(dataset),paste('Missing',colnames(dataset),sep='_'))
+    entire_dat[,colnames(dat[,1:(2*n)])] = dat[,1:(2*n)]
+    
+    ExpData = function(opa,opb){
+        opa = svalue(opa)
+        opb = svalue(opb)
+        if (opa=='All columns' && opb) return(entire_dat)
+        if (opa=='Selected columns' && opb) return(dat[,1:(2*n)])
+        if (opa=='All columns' && !opb) return(entire_dat[,1:ncol(dataset)])
+        if (opa=='Selected columns' && !opb) return(dat[,1:n])
     }
     
+    gExport = gwindow("Export Options", visible = T, width = 300, height = 200)
+    ExGroup = ggroup(container = gExport, expand = TRUE, horizontal = FALSE)
+    ExFrame = gframe(text = "Export", container = ExGroup)
+    ExRadio = gradio(c('All columns','Selected columns'), container = ExFrame)
+    ExCheck = gcheckbox(text = "Export the imputed data with a shadow matrix which consists of TRUE's and FALSE's.\nTRUE's represent for the missing values, and FALSE's represent for non-missings.", checked=TRUE, container = ExGroup)
+    ExGroupB = ggroup(container = ExGroup, expand = FALSE, horizontal = TRUE)
+    ExLabel2 = glabel(text = "Directory  ", container = ExGroupB)
+    ExpText2 = gtext(text = getwd(), width=400, height=20, container = ExGroupB)
+    ExButtoB = gbutton(text = "Browse...", container = ExGroupB, handler = function(h,...){
+      ExFile = gfile(text = 'filename', type = 'selectdir')
+      if (!is.na(ExFile)) svalue(ExpText2) = ExFile
+    })
+    ExGroupT = ggroup(container = ExGroup, expand = FALSE, horizontal = TRUE)
+    ExLabel1 = glabel(text = "File name ", container = ExGroupT)
+    ExpText1 = gtext(text = "", width=400, height=30, container = ExGroupT)
+    ExGroupB = ggroup(container = ExGroup, expand = TRUE, horizontal = TRUE)
+    addSpace(ExGroupB, 20)
+    ExButto1 = gbutton(text = "Save as .csv format", container = ExGroupB, handler=function(h,...){
+        filename = paste(gsub('\\.csv$','',svalue(ExpText1)),FileSuffix,'.csv',sep='')
+        write.csv(ExpData(ExRadio,ExCheck), file=paste(svalue(ExpText2),'/',filename,sep=''), row.names=FALSE)
+        gmessage("The data is exported!")
+    })
+    addSpace(ExGroupB, 20)
+    ExButto2 = gbutton(text = "Save as .rda format", container = ExGroupB, handler=function(h,...){
+        filename = paste(gsub('\\.rda$','',svalue(ExpText1)),FileSuffix,'.rda',sep='')
+        fexdat = ExpData(ExRadio,ExCheck)
+        save(fexdat, file=paste(svalue(ExpText2),'/',filename,sep=''))
+        gmessage("The data is exported!")
+    })
+    addSpace(ExGroupB, 20)
+    ExButto3 = gbutton(text = "Save as data frame", container = ExGroupB, handler=function(h,...){
+        filename = svalue(ExpText1)
+        fexdat = ExpData(ExRadio,ExCheck)
+        eval(parse(text=paste(filename,'<<- fexdat')))
+        gmessage(paste("An R data frame is saved with the name ",filename))
+        })
   }
   
   #####---------------------------------#####
@@ -739,10 +786,10 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, ...){
   
   gb246 = gbutton('Export the data', container = group244,
                   handler = function(h,...){
-                    if (exists('text25')) svalue(text25) = capture.output(cat("\n\n   Clicking this button will export the imputed data based on the options the user chooses.\n\n   A user can define the file name for the exported data, and the imputation method will be suffixed automatically.\n\n   In the exported csv file, there are 2*n columns if the user selected n variables. The first n columns are the imputed data, and the second n columns are the 'shadow matrix' which indicate whether the values are missing or not in the original dataset."))
+                    if (exists('text25')) svalue(text25) = capture.output(cat("\n\n   Clicking this button will export the imputed data based on the other chosen options.\n\n   Users could name the exported data, and the information of imputation method will be completed in the file name automatically.\n\n   Two file formats are provided: csv and rda. For both formats, the number of columns in the exported data depends on the demand of users. There are 2*n columns if the user selected n variables. The first n columns are the imputed data, and the second n columns are the 'shadow matrix' which indicate whether the values are missing or not in the original dataset."))
 		})
   addHandlerMouseMotion(gb246, handler = function(h,...){
-    if (exists('text25')) svalue(text25) = capture.output(cat("\n\n   Clicking this button will export the imputed data based on the options the user chooses.\n\n   A user can define the file name for the exported data, and the imputation method will be suffixed automatically.\n\n   In the exported csv file, there are 2*n columns if the user selected n variables. The first n columns are the imputed data, and the second n columns are the 'shadow matrix' which indicate whether the values are missing or not in the original dataset."))
+    if (exists('text25')) svalue(text25) = capture.output(cat("\n\n   Clicking this button will export the imputed data based on the other chosen options.\n\n   Users could name the exported data, and the information of imputation method will be completed in the file name automatically.\n\n   Two file formats are provided: csv and rda. For both formats, the number of columns in the exported data depends on the demand of users. There are 2*n columns if the user selected n variables. The first n columns are the imputed data, and the second n columns are the 'shadow matrix' which indicate whether the values are missing or not in the original dataset."))
 	})
   
   gb248 = gbutton('Save the plot', container = group244,
