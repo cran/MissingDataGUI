@@ -16,8 +16,8 @@ Data, 2009.}
   Also see the codebook:
   \url{http://ftp.cdc.gov/pub/data/brfss/codebook_09.rtf}
 
-  Format: a data frame with 736 observations on the
-  following 8 variables. \describe{\item{\code{STATE}}{A
+  Format: a data frame with 245 observations on the
+  following 34 variables. \describe{\item{\code{STATE}}{A
   factor with 52 levels. The labels and states
   corresponding to the labels are as follows. 1:Alabama,
   2:Alaska, 4:Arizona, 5:Arkansas, 6:California,
@@ -158,9 +158,8 @@ Data, 2009.}
 }
 \examples{
 if (interactive()) {
-data(brfss)
-MissingDataGUI(brfss)
+    data(brfss)
+    MissingDataGUI(brfss)
 }
 }
 \keyword{datasets}
-

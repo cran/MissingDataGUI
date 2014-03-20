@@ -2,7 +2,8 @@
 \alias{WatchMissingValues}
 \title{The Main Window of Missing Data GUI.}
 \usage{
-  WatchMissingValues(h, data = NULL, gt = NULL, ...)
+WatchMissingValues(h, data = NULL, gt = NULL, size.width = 1000, size.height = 750, 
+    ...)
 }
 \arguments{
   \item{h}{A list with components obj referring to the
@@ -15,6 +16,12 @@
 
   \item{gt}{A widget created by gtable(). It should be
   passed from \code{\link{MissingDataGUI}}.}
+
+  \item{size.width}{the width of window. Default to be
+  1000, and the minimal is 800.}
+
+  \item{size.height}{the height of window. Default to be
+  750, and the minimal is 600.}
 
   \item{...}{Other parameters to be passed to this
   function.}
@@ -61,14 +68,13 @@
   entry to find the variable when this widget is active.
 }
 \examples{
-if(interactive()){
-data(tao)
-WatchMissingValues(data=tao)
-data(brfss)
-WatchMissingValues(data=brfss)
+if (interactive()) {
+    data(tao)
+    WatchMissingValues(data = tao)
+    data(brfss)
+    WatchMissingValues(data = brfss)
 }
 }
 \author{
   Xiaoyue Cheng <\email{xycheng@iastate.edu}>
 }
-

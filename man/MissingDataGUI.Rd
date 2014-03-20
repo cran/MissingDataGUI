@@ -2,12 +2,18 @@
 \alias{MissingDataGUI}
 \title{The Starting of Missing Data GUI.}
 \usage{
-  MissingDataGUI(data = NULL)
+MissingDataGUI(data = NULL, width = 1000, height = 750)
 }
 \arguments{
   \item{data}{A data frame which is shown in the main
   missing-data GUI. If it is null, then the open-files GUI
   opens.}
+
+  \item{width}{the width of window. Default to be 1000, and
+  the minimal is 800.}
+
+  \item{height}{the height of window. Default to be 750,
+  and the minimal is 600.}
 }
 \value{
   NULL
@@ -46,16 +52,15 @@
 }
 \examples{
 if (interactive()) {
-MissingDataGUI()
-
-data(tao)
-MissingDataGUI(tao)
-
-data(brfss)
-MissingDataGUI(brfss)
+    MissingDataGUI()
+    
+    data(tao)
+    MissingDataGUI(tao)
+    
+    data(brfss)
+    MissingDataGUI(brfss)
 }
 }
 \author{
   Xiaoyue Cheng <\email{xycheng@iastate.edu}>
 }
-

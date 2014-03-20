@@ -11,7 +11,6 @@
 }
 \examples{
 if (interactive()) {
-MissingDataGUI()
+    MissingDataGUI()
 }
 }
-

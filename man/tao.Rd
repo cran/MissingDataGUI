@@ -43,9 +43,8 @@
 }
 \examples{
 if (interactive()) {
-data(tao)
-MissingDataGUI(tao)
+    data(tao)
+    MissingDataGUI(tao)
 }
 }
 \keyword{datasets}
-
