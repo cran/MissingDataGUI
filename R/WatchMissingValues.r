@@ -48,6 +48,7 @@
 ##' @importFrom reshape melt.data.frame
 ##' @importFrom GGally ggpairs
 ##' @importFrom GGally ggparcoord
+##' @export
 ##' @examples
 ##' if(interactive()){
 ##' data(tao)
@@ -125,7 +126,7 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, size.width=1000, size.heigh
       m$graphtype=svalue(gr143)
       cond=check123[svalue(check123,index=T)]
       idx_cond = if (length(cond)) (cond %in% gt11[m$name_select,2]) else FALSE
-      if (any(idx_cond) && any((gt11[(gt11[,2] %in% cond[idx_cond]),3])>0)) {
+      if (any(idx_cond) && any((gt11[(gt11[,2] %in% cond[idx_cond]),3])>0) && m$graphtype != "Missingness Map") {
         gmessage("At least one of the conditional variables contains missing values and is selected to be imputed.\n\nWe will unselect the variable(s).\n\nTip: please impute the conditional variable before conditioning on it.",icon='warning')
         miss_cond = gt11[(gt11[,2] %in% cond[idx_cond]),1]
         svalue(gt11) = setdiff(m$name_select, miss_cond)
@@ -194,11 +195,11 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, size.width=1000, size.heigh
           m$dat = list(Imported=data.frame(m$imp_dat[,c(gt11[m$name_select,2])],m$imp_dat[,ncol(m$imp_dat)]))
       }
       
-      for (j in 1:length(m$dat)){
-          for (i in 1:m$n){
-              eval(parse(text=paste("m$dat[[j]][,i]=as.",as.character(gt11[m$name_select,3])[i],"(as.character(m$dat[[j]][,i]))",sep="")))
-          }
-      }
+#       for (j in 1:length(m$dat)){
+#           for (i in 1:m$n){
+#               eval(parse(text=paste("m$dat[[j]][,i]=as.",as.character(gt11[m$name_select,3])[i],"(as.character(m$dat[[j]][,i]))",sep="")))
+#           }
+#       }
       
       if (m$colorby[1]=='Missing on Selected Variables') {
           Missing <- !complete.cases(m$dataset[,gt11[m$name_select,2]])
@@ -272,7 +273,7 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, size.width=1000, size.heigh
           rsltny=ifelse(is.numeric(dat[,2]),resolution(dat[,2]),2.5)
           print(qplot(dat[,1],dat[,2], color=Missing, geom='jitter',alpha=I(0.7),
                       position=position_jitter(width=rsltnx/8,height=rsltny/8),
-                      size=I(3),xlab=colnames(dat)[1],ylab=colnames(dat)[2]) + 
+                      size=I(3),xlab=colnames(dat)[1],ylab=colnames(dat)[2]) +
                     theme(legend.position=legend.pos))
       } else {
           dat$Missings=factor(m$Missing)[order(m$Missing)]
@@ -302,11 +303,15 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, size.width=1000, size.heigh
       dat = m$dat[[j]]
       if (m$parajitter == "Jitter on categorical variables") {
         rowz = nrow(dat)
-        for (i in which(sapply(dat[,1:m$n],class) %in% c('logical','factor','ordered','character'))) {
+        for (i in which(sapply(lapply(dat[,1:m$n],class),`[`,1) %in% c('logical','factor','ordered','character'))) {
           if (is.character(dat[,i])) dat[,i]=factor(dat[,i])
           dat[,i] = as.integer(dat[,i])
           set.seed(m$mi_seed)
           dat[,i] = dat[,i] + runif(rowz, -0.1, 0.1)
+        }
+      } else {
+        for (i in which(sapply(lapply(dat[,1:m$n],class),`[`,1) == 'ordered')) {
+          dat[,i] = as.integer(dat[,i])
         }
       }
       dat$Missing = m$Missing
@@ -334,10 +339,10 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, size.width=1000, size.heigh
       q2=qplot(Reordered_Observation,variable,data=mapdat,geom='tile',fill=Missing,main='Sorted by the number of missing in variables and observations')
       
       dist31=dist(Mapdat[,-(m$n+1)])
-      order31=hclust(dist31,"ward")$order
+      order31=hclust(dist31,"ward.D")$order
       Mapdat3=Mapdat[order31,-(m$n+1)]
       dist32=dist(t(Mapdat[,-(m$n+1)]))
-      order32=hclust(dist32,"ward")$order
+      order32=hclust(dist32,"ward.D")$order
       Mapdat3=Mapdat3[,order32]
       Mapdat3$Reordered_Observation=1:nrow(Mapdat3)
       mapdat=melt.data.frame(Mapdat3[,],"Reordered_Observation")
@@ -894,7 +899,7 @@ WatchMissingValues = function(h, data=NULL, gt=NULL, size.width=1000, size.heigh
   
   gframe242 = gframe(text = "Method", container = group24)
   help_methods = function(h,...){
-      if (exists('text25')) svalue(text25) = capture.output(cat("\n\n   This list displays all the imputation methods.\n\n   Users can make one selection.\n\n      (1) 'Below 10%' means NA's of one variable will be replaced by the value which equals to the minimum of the variable minus 10% of the range. For categorical variables, NA's are treated as a new category. Under this status the selected conditioning variables are ignored. If the data are already imputed, then this item will show the imputed result.\n\n      (2) 'Simple' will create three tabs: Median, Mean/Mode, and Random Value. 'Median' means NA's will be replaced by the median of this variable (omit NA's). 'Mean/Mode' means NA's will be replaced by the mean of the variable (omit NA's) if it is quantitative, and by the mode of the variable (omit NA's) if it is categorical. 'Random Value' means NA's will be replaced by any values of this variable (omit NA's) which are randomly selected. \n\n      (3) 'Neighbor' contains two methods: 'Average Neighbor' and 'Random Neighbor'. 'Average Neighbor' will replace the NA's by the mean of the nearest neighbors. 'Random Neighbor' substitutes the missing for a random sample of the k nearest neighbors. The number of neighbors is default to 5, and editable in the Settings tab. The nearest neighbor method requires at lease one case to be complete, at least two variables to be selected, and no factor/character variables. The ordered factors are treated as integers. The method will return the overall mean or a global random sample value if the observation only contains NA's. \n\n     For all the multiple imputation methods below, the number of imputed sets (default to be 3) and random number seed can be set in the Settings tab.\n\n      (4) 'MI:areg' uses function 'aregImpute' from package 'Hmisc'. It requires at lease one case to be complete, and at least two variables to be selected.\n\n    (5) 'MI:norm' uses function 'imp.norm' from package 'norm'. It requires all selected variables to be numeric(at least integer), and at least two variables to be selected. Sometimes it cannot converge, then the programme will leave NA's without imputation.\n\n      (6) 'MI:mice' uses the mice package. In the Settings tab, the imputing methods for all variables are displayed. Doubleclicking the variable will allow the user to change the method.\n\n    (7) 'MI:mi' employes the mi package.\n\n "))
+      if (exists('text25')) svalue(text25) = capture.output(cat("\n\n   This list displays all the imputation methods.\n\n   Users can make one selection.\n\n      (1) 'Below 10%' means NA's of one variable will be replaced by the value which equals to the minimum of the variable minus 10% of the range. For categorical variables, NA's are treated as a new category. Under this status the selected conditioning variables are ignored. If the data are already imputed, then this item will show the imputed result.\n\n      (2) 'Simple' will create three tabs: Median, Mean, and Random Value. 'Median' means NA's will be replaced by the median of this variable (omit NA's). 'Mean' means NA's will be replaced by the mean of the variable (omit NA's). The median does not apply to the nominal variable, neither does the mean to the categorical variable. In these cases the mode (omit NA's) is provided. 'Random Value' means NA's will be replaced by any values of this variable (omit NA's) which are randomly selected. \n\n      (3) 'Neighbor' contains two methods: 'Average Neighbor' and 'Random Neighbor'. 'Average Neighbor' will replace the NA's by the mean of the nearest neighbors. 'Random Neighbor' substitutes the missing for a random sample of the k nearest neighbors. The number of neighbors is default to 5, and editable in the Settings tab. The nearest neighbor method requires at lease one case to be complete, at least two variables to be selected, and no factor/character variables. The ordered factors are treated as integers. The method will return the overall mean or a global random sample value if the observation only contains NA's. \n\n     For all the multiple imputation methods below, the number of imputed sets (default to be 3) and random number seed can be set in the Settings tab.\n\n      (4) 'MI:areg' uses function 'aregImpute' from package 'Hmisc'. It requires at lease one case to be complete, and at least two variables to be selected.\n\n    (5) 'MI:norm' uses function 'imp.norm' from package 'norm'. It requires all selected variables to be numeric(at least integer), and at least two variables to be selected. Sometimes it cannot converge, then the programme will leave NA's without imputation.\n\n      (6) 'MI:mice' uses the mice package. In the Settings tab, the imputing methods for all variables are displayed. Doubleclicking the variable will allow the user to change the method.\n\n    (7) 'MI:mi' employes the mi package.\n\n "))
   }
   gr242 = gradio(c('Below 10%','Simple','Neighbor','MI:areg',
                    'MI:norm','MI:mice','MI:mi'),
